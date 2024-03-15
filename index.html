@@ -81,7 +81,7 @@
                 if (splitJumpCitationsCheckbox.checked) {
                     line = splitJumpCitations(line);
                 }
-                output += line + "\n";
+                output += line + (i < lines.length - 1 ? "\n" : "");
             }
 
             outputText.value = output.trim();
@@ -107,17 +107,29 @@
         function splitJumpCitations(line) {
             const jumpCitationPattern = /\+(\d+(?:-\d+)?)/g;
             let match;
-            let baseText = line.replace(jumpCitationPattern, '');
+            let baseText = line.replace(jumpCitationPattern, '').trim(); // Ensure base text is trimmed of whitespace
             let additionalLines = "";
+            let matches = [];
 
-            jumpCitationPattern.lastIndex = 0; // Reset regex index
-
+            // Collect matches and their positions
             while ((match = jumpCitationPattern.exec(line)) !== null) {
-                let preText = line.substring(0, line.lastIndexOf(":", match.index) + 1);
-                additionalLines += preText + match[1] + ".\n";
+                matches.push({match: match[0], index: match.index});
             }
 
-            return baseText + (additionalLines ? "\n" + additionalLines : "");
+            // Generate additional lines based on matches
+            for (let i = 0; i < matches.length; i++) {
+                let preText = line.substring(0, matches[i].index).trim(); // Trim to remove any leading/trailing whitespace
+                let matchText = matches[i].match;
+                // Find last colon before match index to correctly prepend the citation part
+                let lastColonIndex = preText.lastIndexOf(":");
+                if (lastColonIndex !== -1) {
+                    preText = preText.substring(0, lastColonIndex + 1); // Include the colon in the output
+                }
+                additionalLines += preText + " " + matchText.replace(/^\+/, "") + ".\n"; // Replace "+" and add period
+            }
+
+            // Combine base text and additional lines, ensuring no initial newline if additionalLines is empty
+            return baseText + (additionalLines ? "\n" + additionalLines.trim() : "");
         }
 
         function copyOutputText() {
@@ -130,6 +142,6 @@
     <div style="text-align:center;"><p>南京大学法学院Chollima制作</p></div>
     <div style="text-align:center;"><p>版权所有  禁止用于营利目的</p></div>
     <p align="center">今日访问人数</p>
-    <div style="text-align:center;"> <img src="https://count.getloli.com/get/@lawschoolreferencetest" alt="lawschoolreferencetest"/></div>
+    <div style="text-align:center;"> <img src="https://count.getloli.com/get/@njuChollima?theme=gelbooru"></div>
 </body>
 </html>
