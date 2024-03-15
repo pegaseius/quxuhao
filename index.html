@@ -19,7 +19,7 @@
 <body>
 <div style="text-align:center;"><p>去序号/去空格/全角半角转化工具</p></div>
     <label for="inputText">输入文本：</label><br>
-    <textarea id="inputText">[19]李示例。本示例存在数字序号   多余空格 多余标点 全角符号以及全角数字问题[J]..法治研究，２０23,(03)：148-160.</textarea><br>
+    <textarea id="inputText">[1]李示例.本示例存在数字序号 多余空格 全角符号 全角数字 多余标点与跳跃引注问题[J]。马克思主义研究,,２０18,（08)：125-132+160-188.</textarea><br>
     <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
     <label for="selectAll">全选</label><br>
     <input type="checkbox" id="removeNumbers">
@@ -32,6 +32,8 @@
     <label for="convertNumbers">将全角数字转换为半角数字</label><br>
     <input type="checkbox" id="removeExtraPunctuation">
     <label for="removeExtraPunctuation">移除多余标点</label><br>
+    <input type="checkbox" id="splitJumpCitations">
+    <label for="splitJumpCitations">拆分跳跃引注</label><br>
     <button onclick="transformText()">转换</button>
     <button onclick="copyOutputText()">一键复制</button><br>
     <label for="outputText">输出文本：</label><br>
@@ -53,55 +55,69 @@
             var convertSymbolsCheckbox = document.getElementById("convertSymbols");
             var convertNumbersCheckbox = document.getElementById("convertNumbers");
             var removeExtraPunctuationCheckbox = document.getElementById("removeExtraPunctuation");
+            var splitJumpCitationsCheckbox = document.getElementById("splitJumpCitations");
             var outputText = document.getElementById("outputText");
             var lines = inputText.split("\n");
             var output = "";
 
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i];
+
                 if (removeNumbersCheckbox.checked) {
-                    // 使用正则表达式去除数字序号
                     line = line.replace(/^\[\d+\]/, "").trim();
                 }
                 if (removeSpacesCheckbox.checked) {
-                    // 去除空格
                     line = line.replace(/\s/g, "");
                 }
                 if (convertSymbolsCheckbox.checked) {
-                    // 将全角符号转换为半角符号
-                    line = line.replace(/：/g, ":");
-                    line = line.replace(/。/g, ".");
-                    line = line.replace(/，/g, ",");
-                    line = line.replace(/；/g, ";");
-                    line = line.replace(/（/g, "(");
-                    line = line.replace(/）/g, ")");
+                    line = convertFullwidthSymbolsToHalfwidth(line);
                 }
                 if (convertNumbersCheckbox.checked) {
-                    // 将全角数字转换为半角数字
-                    line = line.replace(/１/g, "1");
-                    line = line.replace(/２/g, "2");
-                    line = line.replace(/３/g, "3");
-                    line = line.replace(/４/g, "4");
-                    line = line.replace(/５/g, "5");
-                    line = line.replace(/６/g, "6");
-                    line = line.replace(/７/g, "7");
-                    line = line.replace(/８/g, "8");
-                    line = line.replace(/９/g, "9");
-                    line = line.replace(/０/g, "0");
+                    line = convertFullwidthNumbersToHalfwidth(line);
                 }
                 if (removeExtraPunctuationCheckbox.checked) {
-                    // 移除多余标点
-                    line = line.replace(/(?<=\d),(?=\()/g, ""); // 移除数字后跟着括号的逗号
-
-
-                    line = line.replace(/;{2,}/g, ";"); // 移除连续两个以上的分号
-                    line = line.replace(/,{2,}/g, ","); // 移除连续两个以上的逗号
-                    line = line.replace(/\.{2,}/g, "."); // 移除连续两个以上的句号
+                    line = removeRedundantPunctuation(line);
+                }
+                if (splitJumpCitationsCheckbox.checked) {
+                    line = splitJumpCitations(line);
                 }
                 output += line + "\n";
             }
 
             outputText.value = output.trim();
+        }
+
+        function convertFullwidthSymbolsToHalfwidth(line) {
+            const conversions = {'：': ':', '。': '.', '，': ',', '；': ';', '（': '(', '）': ')'};
+            return line.replace(/[：。，；（）]/g, char => conversions[char] || char);
+        }
+
+        function convertFullwidthNumbersToHalfwidth(line) {
+            return line.replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0));
+        }
+
+        function removeRedundantPunctuation(line) {
+            line = line.replace(/(?<=\d),(?=\()/g, "");
+            line = line.replace(/;{2,}/g, ";");
+            line = line.replace(/,{2,}/g, ",");
+            line = line.replace(/\.{2,}/g, ".");
+            return line;
+        }
+
+        function splitJumpCitations(line) {
+            const jumpCitationPattern = /\+(\d+(?:-\d+)?)/g;
+            let match;
+            let baseText = line.replace(jumpCitationPattern, '');
+            let additionalLines = "";
+
+            jumpCitationPattern.lastIndex = 0; // Reset regex index
+
+            while ((match = jumpCitationPattern.exec(line)) !== null) {
+                let preText = line.substring(0, line.lastIndexOf(":", match.index) + 1);
+                additionalLines += preText + match[1] + ".\n";
+            }
+
+            return baseText + (additionalLines ? "\n" + additionalLines : "");
         }
 
         function copyOutputText() {
