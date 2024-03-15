@@ -19,7 +19,7 @@
 <body>
 <div style="text-align:center;"><p>去序号/去空格/全角半角转化工具</p></div>
     <label for="inputText">输入文本：</label><br>
-    <textarea id="inputText">[19]李示例。本示例存在数字序号   多余空格 全角符号以及全角数字问题[J].法治研究，２０23（03)：148-160.</textarea><br>
+    <textarea id="inputText">[19]李示例。本示例存在数字序号   多余空格 多余标点 全角符号以及全角数字问题[J]..法治研究，２０23,(03)：148-160.</textarea><br>
     <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
     <label for="selectAll">全选</label><br>
     <input type="checkbox" id="removeNumbers">
@@ -30,6 +30,8 @@
     <label for="convertSymbols">将全角符号转换为半角符号</label><br>
     <input type="checkbox" id="convertNumbers">
     <label for="convertNumbers">将全角数字转换为半角数字</label><br>
+    <input type="checkbox" id="removeExtraPunctuation">
+    <label for="removeExtraPunctuation">移除多余标点</label><br>
     <button onclick="transformText()">转换</button>
     <button onclick="copyOutputText()">一键复制</button><br>
     <label for="outputText">输出文本：</label><br>
@@ -50,6 +52,7 @@
             var removeSpacesCheckbox = document.getElementById("removeSpaces");
             var convertSymbolsCheckbox = document.getElementById("convertSymbols");
             var convertNumbersCheckbox = document.getElementById("convertNumbers");
+            var removeExtraPunctuationCheckbox = document.getElementById("removeExtraPunctuation");
             var outputText = document.getElementById("outputText");
             var lines = inputText.split("\n");
             var output = "";
@@ -85,6 +88,15 @@
                     line = line.replace(/８/g, "8");
                     line = line.replace(/９/g, "9");
                     line = line.replace(/０/g, "0");
+                }
+                if (removeExtraPunctuationCheckbox.checked) {
+                    // 移除多余标点
+                    line = line.replace(/(?<=\d),(?=\()/g, ""); // 移除数字后跟着括号的逗号
+
+
+                    line = line.replace(/;{2,}/g, ";"); // 移除连续两个以上的分号
+                    line = line.replace(/,{2,}/g, ","); // 移除连续两个以上的逗号
+                    line = line.replace(/\.{2,}/g, "."); // 移除连续两个以上的句号
                 }
                 output += line + "\n";
             }
